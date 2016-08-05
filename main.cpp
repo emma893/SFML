@@ -3,7 +3,10 @@
 #include <iostream>
 #include <string>
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 56e103750a46f456f9eebecc70d348493eb1ed37
 using namespace std;
 
 class Game {
