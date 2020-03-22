@@ -3,8 +3,6 @@
 #include <iostream>
 #include <string>
 
-using namespace std;
-
 class Game {
 
     public:
@@ -20,7 +18,7 @@ class Game {
         void generacion_mapa();
         bool movimiento_valido(int x, int y);
         sf::RectangleShape getObstaculo(int x, int y);
-        void cambiar_posicion_objectos();
+        void cambiar_posicion_objetos();
         bool mapa_valido(int y_actual, int x_acutal);
         int pasos_entre_objetos;
         void render();
@@ -31,25 +29,16 @@ class Game {
         sf::CircleShape mPlayer;
         sf::CircleShape mPlayerObj;
         sf::RectangleShape mPlayerObs;
-        sf::Font mFont;
-        sf::Text mText;
-        sf::Text mText2;
         sf::Vector2f movement;
 
-        char posicion[40];
         bool tabla_de_comprobacion [11][16];
         bool tabla_de_movimientos [11][16];
 
         int posicion_jugable_x;
         int posicion_jugable_y;
 
-        int posicion_obs_x;
-        int posicion_obs_y;
-
-        int posicion_obj_x;
-        int posicion_obj_y;
-
-        string texto;
+        int posicion_objetivo_x;
+        int posicion_objetivo_y;
 
         bool mIsMovingUp, mIsMovingRight, mIsMovingLeft, mIsMovingDown;
         bool mIsMovingUpRel, mIsMovingRightRel, mIsMovingLeftRel, mIsMovingDownRel;
@@ -63,22 +52,6 @@ class Game {
             MapIsChecked = false;
             mIsMapGenerate = true;
             pasos_entre_objetos = 0;
-        // Texto de coordenadas.
-            mFont.loadFromFile("arial.ttf");
-
-            mText.setFont(mFont);
-            mText.setCharacterSize(22);
-            mText.setStyle(sf::Text::Bold);
-            mText.setColor(sf::Color::Red);
-            mText.setPosition(350, 350);
-
-            texto = "";
-
-            mText2.setFont(mFont);
-            mText2.setCharacterSize(22);
-            mText2.setStyle(sf::Text::Bold);
-            mText2.setColor(sf::Color::Red);
-            mText2.setPosition(150, 350);
 
         // Circulo Objetivo
             mPlayerObj.setRadius(25.f);
@@ -96,8 +69,8 @@ class Game {
             mIsMovingDownRel = mIsMovingLeftRel = mIsMovingRightRel = mIsMovingUpRel = 0;
 
         // Posicion inicial del objetivo
-            posicion_obj_x = mPlayerObj.getPosition().x;
-            posicion_obj_y = mPlayerObj.getPosition().y;
+            posicion_objetivo_x = mPlayerObj.getPosition().x;
+            posicion_objetivo_y = mPlayerObj.getPosition().y;
 
     }
 
@@ -203,7 +176,7 @@ class Game {
 
     }
 
-    void Game::cambiar_posicion_objectos(){
+    void Game::cambiar_posicion_objetos(){
 
         int x_player;
         int y_player;
@@ -218,7 +191,7 @@ class Game {
             x_obj = rand() % 14;
             y_obj = rand() % 10;
 
-            if(Game::tabla_de_movimientos[y_obj][x_obj] == true & Game::tabla_de_movimientos[y_player][x_player] == true){
+            if(Game::tabla_de_movimientos[y_obj][x_obj] && Game::tabla_de_movimientos[y_player][x_player]){
                 break;
             }
         }
@@ -233,10 +206,10 @@ class Game {
         sf::RectangleShape nuevo;
 
         // Cuadrado de obstaculo
-            sf::Vector2f mPlayerObs_size(50, 50);
-            nuevo.setSize(mPlayerObs_size);
-            nuevo.setFillColor(sf::Color::White);
-            nuevo.setPosition(y, x);
+        sf::Vector2f mPlayerObs_size(50, 50);
+        nuevo.setSize(mPlayerObs_size);
+        nuevo.setFillColor(sf::Color::White);
+        nuevo.setPosition(y, x);
 
         return nuevo;
     }
@@ -244,100 +217,41 @@ class Game {
     void Game::generacion_mapa(){
 
        srand(time(0));
-//       Game::texto = "";
-       for ( int i = 0; i < 10; i++ ) {
+       for (int i = 0; i < 10; i++) {
+            for (int j = 0; j < 14; j++) {
 
-              for ( int j = 0; j < 14; j++ ) {
+                if(this->mIsMapGenerate){
+                    Game::tabla_de_movimientos[i][j] = rand() % 2;
+                    cambiar_posicion_objetos();
+                    Game::tabla_de_comprobacion[i][j] = false;
+                    this->MapIsChecked = false;
+                }
 
-                    if(this->mIsMapGenerate){
-
-                        Game::tabla_de_movimientos[i][j] = rand() % 2;
-                        cambiar_posicion_objectos();
-                        Game::tabla_de_comprobacion[i][j] = false;
-                        this->MapIsChecked = false;
-
-                    }
-
-                    if(Game::tabla_de_movimientos[i][j] == 0){
-
-//                        Game::texto += Game::posicion;
-
-                        Game::mWindow.draw(Game::getObstaculo(i * 50, j * 50));
-                    }
-//                    sprintf(Game::posicion, "%d", Game::tabla_de_movimientos[i][j]);
-
-              }
-//              Game::texto += "\n";
+                if(Game::tabla_de_movimientos[i][j] == 0) {
+                    Game::mWindow.draw(Game::getObstaculo(i * 50, j * 50));
+                }
+            }
         }
-//        Game::tabla_de_movimientos[0][0] = 0;
-//        Game::tabla_de_movimientos[0][1] = 0;
-//        Game::tabla_de_movimientos[0][2] = 0;
-//        Game::tabla_de_movimientos[0][4] = 0;
-//        Game::tabla_de_movimientos[1][0] = 0;
-//        Game::tabla_de_movimientos[2][3] = 0;
-//        Game::tabla_de_movimientos[3][0] = 0;
-//        Game::tabla_de_movimientos[3][2] = 0;
-//        Game::tabla_de_movimientos[4][2] = 0;
-//        Game::tabla_de_movimientos[4][4] = 0;
-//        Game::tabla_de_movimientos[5][0] = 0;
-//        Game::tabla_de_movimientos[6][0] = 0;
-//        Game::tabla_de_movimientos[6][2] = 0;
-//        Game::tabla_de_movimientos[1][4] = 0;
-//        mText.setString(Game::texto);
-
-//        if(this->mIsMapGenerate){
-//
-//
-//        }
-//        Game::tabla_de_movimientos[2][2] = 1;
-//        Game::tabla_de_movimientos[4][4] = 1;
-//
         this->mIsMapGenerate = false;
     }
 
     bool Game::movimiento_valido(int x, int y){
 
-//        Game::texto = "";
-//        sprintf(Game::posicion, "%d, %d, %d",
-//        Game::posicion_jugable_y ,
-//        Game::pasos_entre_objetos,
-//        Game::tabla_de_movimientos[(Game::posicion_jugable_y / 50)][(Game::posicion_jugable_x / 50)]);
+        int nextPositionY = (Game::posicion_jugable_y / 50) + y;
+        int nextPositionX = (Game::posicion_jugable_x / 50) + x;
 
-        if(Game::tabla_de_movimientos[(Game::posicion_jugable_y / 50) + y][(Game::posicion_jugable_x / 50) + x] == 1){
-//
-//                texto = texto + posicion;
-//                mText2.setString(Game::texto);
-            return true;
-        }else{
+        bool isAValidPlay = Game::tabla_de_movimientos[nextPositionY][nextPositionX] == 1;
 
-//                texto = texto + posicion;
-//                mText2.setString(Game::texto);
-            return false;
-        }
+        return isAValidPlay;
     }
 
     bool Game::mapa_valido(int y_actual, int x_actual){
-
-//        int temp ;
-//
-//        temp = x_actual;
-//
-//        x_actual = Game::mPlayerObj.getPosition().x/100;
-//
-//        x_actual = temp;
-//
-//        temp = y_actual;
-//
-//        y_actual = Game::mPlayerObj.getPosition().y/100;
-//
-//        y_actual = temp;
 
         if(Game::tabla_de_comprobacion[y_actual][x_actual] == true){
 
           this->pasos_entre_objetos --;
           return false;
         }
-
 
         if(y_actual > 10 || y_actual < 0){
 
@@ -359,7 +273,10 @@ class Game {
             return false;
         }
 
-        if((Game::mPlayerObj.getPosition().x/50) == x_actual && ((Game::mPlayerObj.getPosition().y/50) == y_actual)) {
+        int positionPlayerX = Game::mPlayerObj.getPosition().x / 50;
+        int positionPlayerY = Game::mPlayerObj.getPosition().y / 50;
+
+        if(positionPlayerX == x_actual && positionPlayerY == y_actual) {
 
             return true;
         }
@@ -382,28 +299,28 @@ class Game {
         mWindow.clear();
 
         Game::generacion_mapa();
-//
-        while(!MapIsChecked){
 
-            if(Game::mapa_valido(Game::mPlayer.getPosition().y / 50, Game::mPlayer.getPosition().x / 50)){
+        while(!MapIsChecked) {
+
+            int positionPlayerX = Game::mPlayer.getPosition().x / 50;
+            int positionPlayerY = Game::mPlayer.getPosition().y / 50;
+
+            bool isMapaValido = Game::mapa_valido(positionPlayerY, positionPlayerX);
+
+            if(isMapaValido){
 
                 this->MapIsChecked = true;
-
             }else{
 
                 this->pasos_entre_objetos = 0;
                 this->mIsMapGenerate = true;
                 Game::generacion_mapa();
-//                Game::cambiar_posicion_objectos();
             }
         }
-//        mWindow.draw(mText);
-//        mWindow.draw(mText2);
+
         mWindow.draw(mPlayer);
         mWindow.draw(mPlayerObj);
-//        mWindow.draw(mPlayerObs);
         mWindow.display();
-
     }
 
     void Game::run() {

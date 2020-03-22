@@ -3,15 +3,17 @@
 #include <stdlib.h>
 #include <iostream>
 
-sf::Texture texture1;
-sf::Texture texture2;
-sf::Texture texture4;
+// std::cout << "EJEMPLO_STRING: "  + std::to_string(EJEMPLO_INT) << std::endl;
 
-sf::RenderWindow window2;
+sf::RenderWindow window;
 
-sf::Sprite spriteDesierto1;
-sf::Sprite spriteDesierto2;
-sf::Sprite spriteDesierto4;
+sf::Texture groundFieldTexture;
+sf::Texture mountainTexture;
+sf::Texture wallTexture;
+
+sf::Sprite groundFieldSprite;
+sf::Sprite mountainSprite;
+sf::Sprite wallSprite;
 
 int xRand = 0;
 int yRand = 0;
@@ -23,14 +25,15 @@ int sizePiso = 25;
 int limiteCampoVertical = campoVertical / sizePiso;
 int limiteCampoHorizontal = campoHorizontal / sizePiso;
 
-void functionRender (bool vectorRender[], sf::Sprite spriteDesiertoBase, sf::Sprite spriteDesierto, sf::RenderWindow &window) {
+void renderMountain (bool vectorRender[], sf::Sprite spriteDesiertoBase, sf::Sprite spriteDesierto, sf::RenderWindow &window) {
     int positionAnimation = 0;
-    for(size_t i = 1; i < 11; i++)
-    {
+    for(size_t i = 1; i < 11; i++) {
+
         positionAnimation = i * 5;
-        for(size_t j = 2; j < limiteCampoHorizontal; j++)
-        {
+        for(size_t j = 2; j < limiteCampoHorizontal; j++) {
+
             if (vectorRender[j]) {
+
                 yRand = j * sizePiso;
                 spriteDesiertoBase.setPosition(xRand, yRand - 6);
                 window.draw(spriteDesiertoBase);
@@ -43,59 +46,100 @@ void functionRender (bool vectorRender[], sf::Sprite spriteDesiertoBase, sf::Spr
         window.display();
         sf::sleep(sf::milliseconds(5));
     }
+}
 
+void renderWall (int limiteCampoVertical, int position_x, int position_y, sf::Sprite wallSprite, sf::RenderWindow &window) {
+
+    if (position_x == limiteCampoVertical - 1) {
+        wallSprite.setColor(sf::Color(100, 100, 100));
+    }
+
+    wallSprite.setTextureRect(sf::IntRect(
+        rand() % (100 + 1),
+        rand() % (100 + 1), 
+        sizePiso, 
+        sizePiso
+    ));
+    wallSprite.setPosition(position_y * sizePiso, position_x * sizePiso);
+    window.draw(wallSprite);
+}
+
+void setTextures(
+    sf::Sprite &groundFieldSprite,
+    sf::Sprite &mountainSprite,
+    sf::Sprite &wallSprite,
+    sf::Texture &groundFieldTexture,
+    sf::Texture &mountainTexture,
+    sf::Texture &wallTexture) {
+
+    if (!groundFieldTexture.loadFromFile("textures/desert_cracks.png"))
+    {
+        // error...
+    }
+
+    if (!mountainTexture.loadFromFile("textures/desert_mountain.png", sf::IntRect(0, 0, sizePiso, 7)))
+    {
+        // error...
+    }
+
+    if (!wallTexture.loadFromFile("textures/montain_forest.png"))
+    {
+        // error...
+    }
+
+    groundFieldSprite.setTexture(groundFieldTexture);
+    mountainSprite.setTexture(mountainTexture);
+    wallSprite.setTexture(wallTexture);
 }
 
 int main()
 {
-    sf::RenderWindow window2(sf::VideoMode(campoHorizontal, campoVertical), "My window");
-    window2.clear(sf::Color::Black);
+    // Display windows on black.
+    sf::RenderWindow window(sf::VideoMode(campoHorizontal, campoVertical), "Graficos");
+    window.clear(sf::Color::Black);
+    
+    // Setting textures and sprint to render the field.
+    setTextures(
+        groundFieldSprite,
+        mountainSprite,
+        wallSprite,
+        groundFieldTexture,
+        mountainTexture,
+        wallTexture
+    );
 
-    if (!texture1.loadFromFile("../textures/desert_cracks.png"))
-    {
-        // error...
-    }
+    // Iterate vertical and horizontal limit to render the field.
+    for (int position_x = 0; position_x < limiteCampoVertical; position_x++) {
+        for (int position_y = 0; position_y < limiteCampoHorizontal; position_y++) {
 
-    if (!texture4.loadFromFile("../textures/montain_forest.png"))
-    {
-        // error...
-    }
+            groundFieldSprite.setTextureRect(sf::IntRect(
+                rand() % (100 + 1),
+                rand() % (100 + 1),
+                sizePiso,
+                sizePiso
+            ));
+            
+            // Detectar si la posicion es muro.
+            bool isXField = (position_x > 0 && position_x < (limiteCampoVertical - 1));
+            bool isYField = (position_y > 0 && position_y < (limiteCampoHorizontal - 1));
 
-    if (!texture2.loadFromFile("../textures/desert_mountain.png", sf::IntRect(0, 0, sizePiso, 7)))
-    {
-        // error...
-    }
+            if (isXField && isYField) {
 
-    spriteDesierto1.setTexture(texture1);
-    spriteDesierto2.setTexture(texture2);
-    spriteDesierto4.setTexture(texture4);
-
-    std::cout << "acho: "  + std::to_string(campoHorizontal) + ". alto: "  + std::to_string(campoVertical) << std::endl;
-
-    for (int x = 0; x < limiteCampoVertical; x++) {
-        for (int y = 0; y < limiteCampoHorizontal; y++) {
-            spriteDesierto1.setTextureRect(sf::IntRect(rand() % 100 + 1, rand() % 100 + 1, sizePiso, sizePiso));
-            std::cout << "Y: " + std::to_string(y) + ". X: " + std::to_string(x) << std::endl;
-            if ((x > 0 && x < limiteCampoVertical - 1) && (y > 0 && y < limiteCampoHorizontal - 1)) {
-                spriteDesierto1.setPosition(y * sizePiso, x * sizePiso);
-                window2.draw(spriteDesierto1);
+                // Rendering ground in the field.
+                groundFieldSprite.setPosition((position_y * sizePiso), (position_x * sizePiso));
+                window.draw(groundFieldSprite);
             } else {
-                if (x == limiteCampoVertical - 1) {
-                    spriteDesierto4.setColor(sf::Color(100, 100, 100));
-                }else {
-                    spriteDesierto4.setColor(sf::Color(255, 255, 255));
-                }
-                spriteDesierto4.setTextureRect(sf::IntRect(rand() % 100 + 1, rand() % 100 + 1, sizePiso, sizePiso));
-                spriteDesierto4.setPosition(y * sizePiso, x * sizePiso);
-                window2.draw(spriteDesierto4);
+
+                // Rendering wall in the field.
+                renderWall(limiteCampoVertical, position_x, position_y, wallSprite, window);
             }
         }
     }
     bool vectorRender[limiteCampoHorizontal - 1] = {false};
-    
-    window2.display();
+
+    window.display();
     sf::sleep(sf::milliseconds(rand() % 50));
-    spriteDesierto4.setColor(sf::Color(255, 255, 255));
+    // wallSprite.setColor(sf::Color(255, 255, 255));
     for (int x = 1; x < limiteCampoHorizontal - 1; x++) {
         xRand =  x * sizePiso;
         for (int y = 3; y < limiteCampoVertical; y++) {
@@ -105,17 +149,17 @@ int main()
                 vectorRender[y] = false;
             }
         }
-        functionRender(vectorRender, spriteDesierto2, spriteDesierto4, window2);
+        renderMountain(vectorRender, mountainSprite, wallSprite, window);
     }
-    window2.display();
+    window.display();
 
-    while(window2.isOpen()) {
+    while(window.isOpen()) {
         sf::Event event;
-        while (window2.pollEvent(event))
+        while (window.pollEvent(event))
         {
-            // "close requested" event: we close the window
-            if (event.type == sf::Event::Closed)
-                window2.close();
+            if (event.type == sf::Event::Closed){
+                window.close();
+            }
         }
     }
     return 0;
