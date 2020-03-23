@@ -32,13 +32,12 @@ class Game {
         const static int windowDimentionX = 500; // window dimention Y
         const static int windowDimentionY = 700; // window dimention X
 
-        // size map
-        const static int sizeBlock = 20;
+        // large: 100. medium: 50, little: 10.
+        const static int sizeBlock = 50;
         
         const static int fieldDimentionX = ((windowDimentionX / sizeBlock) * 2) + 1;
         const static int fieldDimentionY = ((windowDimentionY / sizeBlock) * 2) + 2;
 
-        // large: 100. medium: 50, little: 10.
         const static int sizeField = sizeBlock / 2;
         float movementDistance = sizeField;
 
