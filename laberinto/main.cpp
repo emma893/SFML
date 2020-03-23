@@ -29,8 +29,21 @@ class Game {
         sf::RectangleShape mPlayerObs;
         sf::Vector2f movement;
 
-        bool tabla_de_comprobacion [11][16];
-        bool tabla_de_movimientos [11][16];
+        const static int windowDimentionX = 500; // window dimention Y
+        const static int windowDimentionY = 700; // window dimention X
+
+        // size map
+        const static int sizeBlock = 20;
+        
+        const static int fieldDimentionX = ((windowDimentionX / sizeBlock) * 2) + 1;
+        const static int fieldDimentionY = ((windowDimentionY / sizeBlock) * 2) + 2;
+
+        // large: 100. medium: 50, little: 10.
+        const static int sizeField = sizeBlock / 2;
+        float movementDistance = sizeField;
+
+        bool tabla_de_comprobacion [fieldDimentionX][fieldDimentionY];
+        bool tabla_de_movimientos [fieldDimentionX][fieldDimentionY];
 
         int posicion_jugable_x;
         int posicion_jugable_y;
@@ -44,18 +57,18 @@ class Game {
         bool mapIsChecked;
 };
 
-    Game::Game(): mWindow(sf::VideoMode(700, 500), "Atrapame!"), mPlayer() {
+    Game::Game(): mWindow(sf::VideoMode(windowDimentionY, windowDimentionX), "Atrapame!"), mPlayer() {
 
             mapIsChecked = false;
             mIsMapGenerate = true;
             pasos_entre_objetos = 0;
 
         // Circulo Objetivo
-            mPlayerObj.setRadius(25.f);
+            mPlayerObj.setRadius(movementDistance / 2.f);
             mPlayerObj.setFillColor(sf::Color::Cyan);
 
         // Circulo jugable
-            mPlayer.setRadius(25.f);
+            mPlayer.setRadius(movementDistance / 2.f);
             mPlayer.setFillColor(sf::Color::Cyan);
 
         // Movimiento del objeto mPlayer
@@ -117,22 +130,22 @@ class Game {
         this->movement.x = 0.f;
 
         if (this->mIsMovingUp && this->mIsMovingUpRel && (posicion_jugable_y > 0) && movimiento_valido(0, -1)) {
-            this->movement.y -= 50.f;
+            this->movement.y -= movementDistance;
             this->mIsMovingUpRel = 0;
         }
 
-        if (this->mIsMovingDown &&  this->mIsMovingDownRel && (posicion_jugable_y < 450) && movimiento_valido(0, 1)) {
-            this->movement.y += 50.f;
+        if (this->mIsMovingDown &&  this->mIsMovingDownRel && (posicion_jugable_y < (windowDimentionX - sizeField)) && movimiento_valido(0, 1)) {
+            this->movement.y += movementDistance;
             this->mIsMovingDownRel = 0;
         }
 
         if (this->mIsMovingLeft && this->mIsMovingLeftRel && (posicion_jugable_x  > 0) && movimiento_valido(-1, 0)) {
-            this->movement.x -= 50.f;
+            this->movement.x -= movementDistance;
             this->mIsMovingLeftRel = 0;
         }
 
-        if (this->mIsMovingRight && this->mIsMovingRightRel && (posicion_jugable_x < 650) && movimiento_valido(1, 0)) {
-            this->movement.x += 50.f;
+        if (this->mIsMovingRight && this->mIsMovingRightRel && (posicion_jugable_x < (windowDimentionY - sizeField)) && movimiento_valido(1, 0)) {
+            this->movement.x += movementDistance;
             this->mIsMovingRightRel = 0;
         }
 
@@ -153,19 +166,19 @@ class Game {
 
         while(true){
 
-            x_player = rand() % 14;
-            y_player = rand() % 10;
+            x_player = rand() % (fieldDimentionY - 2);
+            y_player = rand() % (fieldDimentionX - 1);
 
-            x_obj = rand() % 14;
-            y_obj = rand() % 10;
+            x_obj = rand() % (fieldDimentionY - 2);
+            y_obj = rand() % (fieldDimentionX - 1);
 
             if(Game::tabla_de_movimientos[y_obj][x_obj] && Game::tabla_de_movimientos[y_player][x_player]){
                 break;
             }
         }
 
-        mPlayerObj.setPosition(x_obj * 50, y_obj * 50);
-        mPlayer.setPosition(x_player * 50, y_player * 50);
+        mPlayerObj.setPosition(x_obj * sizeField, y_obj * sizeField);
+        mPlayer.setPosition(x_player * sizeField, y_player * sizeField);
     }
 
 
@@ -174,7 +187,7 @@ class Game {
         sf::RectangleShape nuevo;
 
         // Cuadrado de obstaculo
-        sf::Vector2f mPlayerObs_size(50, 50);
+        sf::Vector2f mPlayerObs_size(sizeField, sizeField);
         nuevo.setSize(mPlayerObs_size);
         nuevo.setFillColor(sf::Color::White);
         nuevo.setPosition(y, x);
@@ -185,8 +198,8 @@ class Game {
     void Game::generacion_mapa(){
 
        srand(time(0));
-       for (int i = 0; i < 10; i++) {
-            for (int j = 0; j < 14; j++) {
+       for (int i = 0; i < (fieldDimentionX - 1); i++) {
+            for (int j = 0; j < (fieldDimentionY - 2); j++) {
 
                 if(this->mIsMapGenerate){
                     Game::tabla_de_movimientos[i][j] = rand() % 2;
@@ -196,7 +209,7 @@ class Game {
                 }
 
                 if(Game::tabla_de_movimientos[i][j] == 0) {
-                    Game::mWindow.draw(Game::getObstaculo(i * 50, j * 50));
+                    Game::mWindow.draw(Game::getObstaculo(i * sizeField, j * sizeField));
                 }
             }
         }
@@ -205,8 +218,8 @@ class Game {
 
     bool Game::movimiento_valido(int x, int y){
 
-        int nextPositionY = (Game::posicion_jugable_y / 50) + y;
-        int nextPositionX = (Game::posicion_jugable_x / 50) + x;
+        int nextPositionY = (Game::posicion_jugable_y / sizeField) + y;
+        int nextPositionX = (Game::posicion_jugable_x / sizeField) + x;
 
         bool isAValidPlay = Game::tabla_de_movimientos[nextPositionY][nextPositionX] == 1;
 
@@ -221,13 +234,13 @@ class Game {
           return false;
         }
 
-        if(y_actual > 10 || y_actual < 0){
+        if(y_actual > (fieldDimentionX - 1) || y_actual < 0){
 
             this->pasos_entre_objetos --;
             return false;
         }
 
-        if(x_actual > 14 || x_actual < 0){
+        if(x_actual > (fieldDimentionY - 2) || x_actual < 0){
 
             this->pasos_entre_objetos --;
             return false;
@@ -241,8 +254,8 @@ class Game {
             return false;
         }
 
-        int positionPlayerX = Game::mPlayerObj.getPosition().x / 50;
-        int positionPlayerY = Game::mPlayerObj.getPosition().y / 50;
+        int positionPlayerX = Game::mPlayerObj.getPosition().x / sizeField;
+        int positionPlayerY = Game::mPlayerObj.getPosition().y / sizeField;
 
         if(positionPlayerX == x_actual && positionPlayerY == y_actual) {
 
@@ -270,8 +283,8 @@ class Game {
 
         while(!mapIsChecked) {
 
-            int positionPlayerX = Game::mPlayer.getPosition().x / 50;
-            int positionPlayerY = Game::mPlayer.getPosition().y / 50;
+            int positionPlayerX = Game::mPlayer.getPosition().x / sizeField;
+            int positionPlayerY = Game::mPlayer.getPosition().y / sizeField;
 
             bool isMapaValido = Game::mapa_valido(positionPlayerY, positionPlayerX);
 
