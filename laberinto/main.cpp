@@ -23,8 +23,6 @@ class Game {
         int pasos_entre_objetos;
         void render();
 
-    private:
-
         sf::RenderWindow mWindow;
         sf::CircleShape mPlayer;
         sf::CircleShape mPlayerObj;
@@ -43,13 +41,12 @@ class Game {
         bool mIsMovingUp, mIsMovingRight, mIsMovingLeft, mIsMovingDown;
         bool mIsMovingUpRel, mIsMovingRightRel, mIsMovingLeftRel, mIsMovingDownRel;
         bool mIsMapGenerate;
-        bool MapIsChecked;
+        bool mapIsChecked;
 };
 
     Game::Game(): mWindow(sf::VideoMode(700, 500), "Atrapame!"), mPlayer() {
 
-
-            MapIsChecked = false;
+            mapIsChecked = false;
             mIsMapGenerate = true;
             pasos_entre_objetos = 0;
 
@@ -71,43 +68,21 @@ class Game {
         // Posicion inicial del objetivo
             posicion_objetivo_x = mPlayerObj.getPosition().x;
             posicion_objetivo_y = mPlayerObj.getPosition().y;
-
     }
 
     void Game::handlePlayerInput(sf::Keyboard::Key key, bool isPressed) {
 
-        if (key == sf::Keyboard::Up)
-        mIsMovingUp = isPressed;
-        else if (key == sf::Keyboard::Down)
-        mIsMovingDown = isPressed;
-        else if (key == sf::Keyboard::Left)
-        mIsMovingLeft = isPressed;
-        else if (key == sf::Keyboard::Right)
-        mIsMovingRight = isPressed;
+        if (key == sf::Keyboard::Up) mIsMovingUp = isPressed;
+        else if (key == sf::Keyboard::Down) mIsMovingDown = isPressed;
+        else if (key == sf::Keyboard::Left) mIsMovingLeft = isPressed;
+        else if (key == sf::Keyboard::Right) mIsMovingRight = isPressed;
 
-        if (key == sf::Keyboard::Up) {
-
-            this->mIsMovingUpRel = isPressed;
-        }
-
-        if (key == sf::Keyboard::Down) {
-
-            this->mIsMovingDownRel = isPressed;
-        }
-
-        if (key == sf::Keyboard::Left) {
-
-            this->mIsMovingLeftRel = isPressed;
-
-        }
-
-        if (key == sf::Keyboard::Right) {
-
-            this->mIsMovingRightRel = isPressed;
-        }
+        this->mIsMovingUpRel    = (key == sf::Keyboard::Up) ?: isPressed;        
+        this->mIsMovingDownRel  = (key == sf::Keyboard::Down) ?: isPressed;
+        this->mIsMovingLeftRel  = (key == sf::Keyboard::Left) ?: isPressed;
+        this->mIsMovingRightRel = (key == sf::Keyboard::Right) ?: isPressed;
 
         if (key == sf::Keyboard::J) {
-
             this->mIsMapGenerate = isPressed;
             this->tabla_de_movimientos;
             Game::generacion_mapa();
@@ -135,45 +110,38 @@ class Game {
 
     void Game::update() {
 
-            posicion_jugable_x = mPlayer.getPosition().x;
-            posicion_jugable_y = mPlayer.getPosition().y;
+        posicion_jugable_x = mPlayer.getPosition().x;
+        posicion_jugable_y = mPlayer.getPosition().y;
 
-            this->movement.y = 0.f;
-            this->movement.x = 0.f;
+        this->movement.y = 0.f;
+        this->movement.x = 0.f;
 
-            if (this->mIsMovingUp & this->mIsMovingUpRel & (posicion_jugable_y > 0) & movimiento_valido(0, -1)) {
+        if (this->mIsMovingUp && this->mIsMovingUpRel && (posicion_jugable_y > 0) && movimiento_valido(0, -1)) {
+            this->movement.y -= 50.f;
+            this->mIsMovingUpRel = 0;
+        }
 
-                this->movement.y -= 50.f;
-                this->mIsMovingUpRel = 0;
-            }
+        if (this->mIsMovingDown &&  this->mIsMovingDownRel && (posicion_jugable_y < 450) && movimiento_valido(0, 1)) {
+            this->movement.y += 50.f;
+            this->mIsMovingDownRel = 0;
+        }
 
-            if (this->mIsMovingDown &  this->mIsMovingDownRel & (posicion_jugable_y < 450) & movimiento_valido(0, 1)) {
+        if (this->mIsMovingLeft && this->mIsMovingLeftRel && (posicion_jugable_x  > 0) && movimiento_valido(-1, 0)) {
+            this->movement.x -= 50.f;
+            this->mIsMovingLeftRel = 0;
+        }
 
-                this->movement.y += 50.f;
-                this->mIsMovingDownRel = 0;
-            }
+        if (this->mIsMovingRight && this->mIsMovingRightRel && (posicion_jugable_x < 650) && movimiento_valido(1, 0)) {
+            this->movement.x += 50.f;
+            this->mIsMovingRightRel = 0;
+        }
 
-            if (this->mIsMovingLeft & this->mIsMovingLeftRel & (posicion_jugable_x  > 0) & movimiento_valido(-1, 0)) {
+        if(mPlayer.getPosition() == mPlayerObj.getPosition()) {
+            this->mIsMapGenerate = true;
+            Game::generacion_mapa();
+        }
 
-                this->movement.x -= 50.f;
-                this->mIsMovingLeftRel = 0;
-
-            }
-
-            if (this->mIsMovingRight & this->mIsMovingRightRel & (posicion_jugable_x < 650) & movimiento_valido(1, 0)) {
-
-                this->movement.x += 50.f;
-                this->mIsMovingRightRel = 0;
-            }
-
-            if(mPlayer.getPosition() == mPlayerObj.getPosition()) {
-
-                this->mIsMapGenerate = true;
-                Game::generacion_mapa();
-            }
-
-            mPlayer.move(this->movement);
-
+        mPlayer.move(this->movement);
     }
 
     void Game::cambiar_posicion_objetos(){
@@ -224,7 +192,7 @@ class Game {
                     Game::tabla_de_movimientos[i][j] = rand() % 2;
                     cambiar_posicion_objetos();
                     Game::tabla_de_comprobacion[i][j] = false;
-                    this->MapIsChecked = false;
+                    this->mapIsChecked = false;
                 }
 
                 if(Game::tabla_de_movimientos[i][j] == 0) {
@@ -300,7 +268,7 @@ class Game {
 
         Game::generacion_mapa();
 
-        while(!MapIsChecked) {
+        while(!mapIsChecked) {
 
             int positionPlayerX = Game::mPlayer.getPosition().x / 50;
             int positionPlayerY = Game::mPlayer.getPosition().y / 50;
@@ -309,7 +277,7 @@ class Game {
 
             if(isMapaValido){
 
-                this->MapIsChecked = true;
+                this->mapIsChecked = true;
             }else{
 
                 this->pasos_entre_objetos = 0;
@@ -337,6 +305,5 @@ int main() {
 
     Game game;
     game.run();
-
 }
 
