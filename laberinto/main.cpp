@@ -231,7 +231,7 @@ class Game {
         }
 
         // This check if this point is playable.
-        if (!Game::arrayToMap[y_actual][x_actual]) {
+        if (Game::arrayToMap[y_actual][x_actual]) {
             return false;
         }
 
@@ -294,12 +294,11 @@ class Game {
             Game::createNewMap();
             Game::setObjectPositions();
             
-            // isValidMap = Game::checkMap(playerPositionY, playerPositionX);
+            isValidMap = Game::checkMap(playerPositionY, playerPositionX);
 
-            // if (isValidMap) {
-            //     isMapChecked = true;
-            // }
-            isValidMap = true;
+            if (isValidMap) {
+                isMapChecked = true;
+            }
         }
     }
 

@@ -108,6 +108,9 @@ int main()
         wallTexture
     );
 
+    // line to set random bools.
+    srand(time(0));
+
     // Iterate vertical and horizontal limit to render the field.
     for (int position_x = 0; position_x < limiteCampoVertical; position_x++) {
         for (int position_y = 0; position_y < limiteCampoHorizontal; position_y++) {
