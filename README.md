@@ -19,3 +19,9 @@ g++ -c main.cpp -I <sfml-install-path>/include
 
 # Ahora se genera un exe con el .o y los modulos de SFML que se usaron en el programa. Y se deben indicar donde buscar las librerias que se han usado.
 g++ main.o -o NOMBRE_DE_PROGRAMA -L <sfml-install-path>/lib -lsfml-graphics -lsfml-window -lsfml-system
+
+# Crear una carpeta files dentro de laberinto y circle, y usar el siguiente comando.
+# Esto es para que no queden el ejecutable que podria no ser compatible en otras plataformas
+# y el archivo .o que queda despues de la compilacion.
+
+gcc -c -o files/main.o main.cpp && g++ files/main.o -o files/lab -lsfml-graphics -lsfml-window -lsfml-system && ./files/lab

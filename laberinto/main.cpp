@@ -94,7 +94,6 @@ class Game {
 
         if (isPressed) {
             Game::updateGame();
-            std::cout << "|UPDATED|" << std::endl;
         }
     }
 
@@ -125,22 +124,18 @@ class Game {
         this->movement.x = 0.f;
 
         if (this->mIsMovingUp && (playerPositionYState > 0) && checkMovement(0, -1)) {
-            std::cout << "|Up|" << std::endl;
             this->movement.y -= movementDistance;
             this->mIsMovingUp = false;
         } else {
             if (this->mIsMovingDown && (playerPositionYState < (windowDimentionX - sizeField)) && checkMovement(0, 1)) {
-                std::cout << "|Down|" << std::endl;
                 this->movement.y += movementDistance;
                 this->mIsMovingDown = false;
             } else {
                 if (this->mIsMovingLeft && (playerPositionXState  > 0) && checkMovement(-1, 0)) {
-                    std::cout << "|Left|" << std::endl;
                     this->movement.x -= movementDistance;
                     this->mIsMovingLeft= false;
                 } else {
                     if (this->mIsMovingRight && (playerPositionXState < (windowDimentionY - sizeField)) && checkMovement(1, 0)) {
-                        std::cout << "|Right|" << std::endl;
                         this->movement.x += movementDistance;
                         this->mIsMovingRight = false;
                     }
@@ -212,9 +207,6 @@ class Game {
 
         int nextPositionY = (Game::playerObject.getPosition().y / sizeField) + y;
         int nextPositionX = (Game::playerObject.getPosition().x / sizeField) + x;
-
-        std::cout << "NEXT Positions X: " + std::to_string(nextPositionX);
-        std::cout << " | Y: " + std::to_string(nextPositionY) << std::endl;
 
         bool isAValidPlay = !Game::arrayToMap[nextPositionY][nextPositionX];
 
@@ -301,9 +293,6 @@ class Game {
             distanceBetweenObjects = 0;
             Game::createNewMap();
             Game::setObjectPositions();
-
-            std::cout << "Player Positions X: " + std::to_string(playerPositionX);
-            std::cout << " | Y: " + std::to_string(playerPositionY) << std::endl;
             
             // isValidMap = Game::checkMap(playerPositionY, playerPositionX);
 
@@ -322,9 +311,6 @@ class Game {
                 createNewMapAndObjects();
                 renderMapAndObjects();
                 isMapGenerated = true;
-                // std::cout << "Distancia: " + std::to_string(this->distanceBetweenObjects) << std::endl;
-                // std::cout << "Player X: " + std::to_string(playerPositionX) + " - Y: " + std::to_string(playerPositionY) << std::endl;
-                // std::cout << "Objetive X: " + std::to_string(objectivePositionX) + " - Y: " + std::to_string(objectivePositionY) << std::endl;
             }
             processEvents();
         }
