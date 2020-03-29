@@ -12,28 +12,31 @@ class Game {
 
     private:
 
-        void handlePlayerInput(sf::Keyboard::Key key, bool isPressed);
+        // MAIN FUNCTIONS
+        void updateGame();
+        void createNewMapAndObjects();
+        void renderMapAndObjects();
         void processEvents();
-        void update();
-        void generacion_mapa();
-        bool movimiento_valido(int x, int y);
-        sf::RectangleShape getObstaculo(int x, int y);
-        void cambiar_posicion_objetos();
-        bool mapa_valido(int y_actual, int x_acutal);
-        int pasos_entre_objetos;
-        void render();
 
-        sf::RenderWindow mWindow;
-        sf::CircleShape mPlayer;
-        sf::CircleShape mPlayerObj;
-        sf::RectangleShape mPlayerObs;
+        // GENERAL FUNCIONS
+        void handlePlayerInput(sf::Keyboard::Key key, bool isPressed);
+        void createNewMap();
+        bool checkMovement(int x, int y);
+        void setObjectPositions();
+        bool checkMap(int y_actual, int x_acutal);
+        
+        int distanceBetweenObjects;
+        sf::RectangleShape getWall(int x, int y, sf::Color wallColor);
+        sf::RenderWindow gameWindow;
+        sf::CircleShape playerObject;
+        sf::CircleShape objetiveObject;
         sf::Vector2f movement;
 
         const static int windowDimentionX = 500; // window dimention Y
         const static int windowDimentionY = 700; // window dimention X
 
         // large: 100. medium: 50, little: 10.
-        const static int sizeBlock = 50;
+        const static int sizeBlock = 100;
         
         const static int fieldDimentionX = ((windowDimentionX / sizeBlock) * 2) + 1;
         const static int fieldDimentionY = ((windowDimentionY / sizeBlock) * 2) + 2;
@@ -41,45 +44,41 @@ class Game {
         const static int sizeField = sizeBlock / 2;
         float movementDistance = sizeField;
 
-        bool tabla_de_comprobacion [fieldDimentionX][fieldDimentionY];
-        bool tabla_de_movimientos [fieldDimentionX][fieldDimentionY];
+        bool arrayToCheck [fieldDimentionX][fieldDimentionY];
+        bool arrayToMap [fieldDimentionX][fieldDimentionY];
 
-        int posicion_jugable_x;
-        int posicion_jugable_y;
+        int playerPositionX;
+        int playerPositionY;
 
-        int posicion_objetivo_x;
-        int posicion_objetivo_y;
+        int objectivePositionX;
+        int objectivePositionY;
 
         bool mIsMovingUp, mIsMovingRight, mIsMovingLeft, mIsMovingDown;
         bool mIsMovingUpRel, mIsMovingRightRel, mIsMovingLeftRel, mIsMovingDownRel;
-        bool mIsMapGenerate;
-        bool mapIsChecked;
+        bool isMapChecked;
+        bool isMapGenerated;
 };
 
-    Game::Game(): mWindow(sf::VideoMode(windowDimentionY, windowDimentionX), "Atrapame!"), mPlayer() {
+    Game::Game(): gameWindow(sf::VideoMode(windowDimentionY, windowDimentionX), "Atrapame!"), playerObject() {
 
-            mapIsChecked = false;
-            mIsMapGenerate = true;
-            pasos_entre_objetos = 0;
+            isMapChecked = false;
+            distanceBetweenObjects = 0;
+            isMapGenerated = false;
 
         // Circulo Objetivo
-            mPlayerObj.setRadius(movementDistance / 2.f);
-            mPlayerObj.setFillColor(sf::Color::Cyan);
+            objetiveObject.setRadius(movementDistance / 2.f);
+            objetiveObject.setFillColor(sf::Color::Cyan);
 
         // Circulo jugable
-            mPlayer.setRadius(movementDistance / 2.f);
-            mPlayer.setFillColor(sf::Color::Cyan);
+            playerObject.setRadius(movementDistance / 2.f);
+            playerObject.setFillColor(sf::Color::Green);
 
-        // Movimiento del objeto mPlayer
+        // Movimiento del objeto playerObject
             sf::Vector2f movement(0.f, 0.f);
 
         // Variables de movimiento
             mIsMovingDown = mIsMovingLeft = mIsMovingRight = mIsMovingUp = 0;
             mIsMovingDownRel = mIsMovingLeftRel = mIsMovingRightRel = mIsMovingUpRel = 0;
-
-        // Posicion inicial del objetivo
-            posicion_objetivo_x = mPlayerObj.getPosition().x;
-            posicion_objetivo_y = mPlayerObj.getPosition().y;
     }
 
     void Game::handlePlayerInput(sf::Keyboard::Key key, bool isPressed) {
@@ -89,15 +88,13 @@ class Game {
         else if (key == sf::Keyboard::Left) mIsMovingLeft = isPressed;
         else if (key == sf::Keyboard::Right) mIsMovingRight = isPressed;
 
-        this->mIsMovingUpRel    = (key == sf::Keyboard::Up) ?: isPressed;        
-        this->mIsMovingDownRel  = (key == sf::Keyboard::Down) ?: isPressed;
-        this->mIsMovingLeftRel  = (key == sf::Keyboard::Left) ?: isPressed;
-        this->mIsMovingRightRel = (key == sf::Keyboard::Right) ?: isPressed;
-
         if (key == sf::Keyboard::J) {
-            this->mIsMapGenerate = isPressed;
-            this->tabla_de_movimientos;
-            Game::generacion_mapa();
+            this->isMapGenerated = false;
+        }
+
+        if (isPressed) {
+            Game::updateGame();
+            std::cout << "|UPDATED|" << std::endl;
         }
     }
 
@@ -105,8 +102,7 @@ class Game {
 
         sf::Event event;
 
-        while (mWindow.pollEvent(event)) {
-
+        while (gameWindow.pollEvent(event)) {
             switch (event.type) {
                 case sf::Event::KeyPressed:handlePlayerInput(event.key.code, true);
                 break;
@@ -114,54 +110,58 @@ class Game {
                 case sf::Event::KeyReleased:handlePlayerInput(event.key.code, false);
                 break;
 
-                case sf::Event::Closed:mWindow.close();
+                case sf::Event::Closed:gameWindow.close();
                 break;
             }
         }
     }
 
-    void Game::update() {
+    void Game::updateGame() {
 
-        posicion_jugable_x = mPlayer.getPosition().x;
-        posicion_jugable_y = mPlayer.getPosition().y;
+        int playerPositionXState = playerObject.getPosition().x;
+        int playerPositionYState = playerObject.getPosition().y;
 
         this->movement.y = 0.f;
         this->movement.x = 0.f;
 
-        if (this->mIsMovingUp && this->mIsMovingUpRel && (posicion_jugable_y > 0) && movimiento_valido(0, -1)) {
+        if (this->mIsMovingUp && (playerPositionYState > 0) && checkMovement(0, -1)) {
+            std::cout << "|Up|" << std::endl;
             this->movement.y -= movementDistance;
-            this->mIsMovingUpRel = 0;
+            this->mIsMovingUp = false;
+        } else {
+            if (this->mIsMovingDown && (playerPositionYState < (windowDimentionX - sizeField)) && checkMovement(0, 1)) {
+                std::cout << "|Down|" << std::endl;
+                this->movement.y += movementDistance;
+                this->mIsMovingDown = false;
+            } else {
+                if (this->mIsMovingLeft && (playerPositionXState  > 0) && checkMovement(-1, 0)) {
+                    std::cout << "|Left|" << std::endl;
+                    this->movement.x -= movementDistance;
+                    this->mIsMovingLeft= false;
+                } else {
+                    if (this->mIsMovingRight && (playerPositionXState < (windowDimentionY - sizeField)) && checkMovement(1, 0)) {
+                        std::cout << "|Right|" << std::endl;
+                        this->movement.x += movementDistance;
+                        this->mIsMovingRight = false;
+                    }
+                }
+            }
         }
 
-        if (this->mIsMovingDown &&  this->mIsMovingDownRel && (posicion_jugable_y < (windowDimentionX - sizeField)) && movimiento_valido(0, 1)) {
-            this->movement.y += movementDistance;
-            this->mIsMovingDownRel = 0;
-        }
+        playerObject.move(this->movement);
 
-        if (this->mIsMovingLeft && this->mIsMovingLeftRel && (posicion_jugable_x  > 0) && movimiento_valido(-1, 0)) {
-            this->movement.x -= movementDistance;
-            this->mIsMovingLeftRel = 0;
+        if(playerObject.getPosition() != objetiveObject.getPosition()) {
+            gameWindow.draw(getWall(playerPositionYState, playerPositionXState, sf::Color::Black));
+            gameWindow.draw(playerObject);
+            gameWindow.display();
+        } else {
+            this->isMapGenerated = false;
         }
-
-        if (this->mIsMovingRight && this->mIsMovingRightRel && (posicion_jugable_x < (windowDimentionY - sizeField)) && movimiento_valido(1, 0)) {
-            this->movement.x += movementDistance;
-            this->mIsMovingRightRel = 0;
-        }
-
-        if(mPlayer.getPosition() == mPlayerObj.getPosition()) {
-            this->mIsMapGenerate = true;
-            Game::generacion_mapa();
-        }
-
-        mPlayer.move(this->movement);
     }
 
-    void Game::cambiar_posicion_objetos(){
+    void Game::setObjectPositions() {
 
-        int x_player;
-        int y_player;
-        int x_obj;
-        int y_obj;
+        int x_player, y_player, x_obj, y_obj = 0;
 
         while(true){
 
@@ -171,145 +171,162 @@ class Game {
             x_obj = rand() % (fieldDimentionY - 2);
             y_obj = rand() % (fieldDimentionX - 1);
 
-            if(Game::tabla_de_movimientos[y_obj][x_obj] && Game::tabla_de_movimientos[y_player][x_player]){
+            if(!Game::arrayToMap[y_obj][x_obj] && !Game::arrayToMap[y_player][x_player]){
                 break;
             }
         }
 
-        mPlayerObj.setPosition(x_obj * sizeField, y_obj * sizeField);
-        mPlayer.setPosition(x_player * sizeField, y_player * sizeField);
+        this->playerPositionX = x_player;
+        this->playerPositionY = y_player;
+        this->objectivePositionX = x_obj;
+        this->objectivePositionY = y_obj;
     }
 
 
-    sf::RectangleShape Game::getObstaculo(int x, int y){
+    sf::RectangleShape Game::getWall(int x, int y, sf::Color wallColor){
 
         sf::RectangleShape nuevo;
 
-        // Cuadrado de obstaculo
+        // Cuadrado de obstaculo o espacio negro
         sf::Vector2f mPlayerObs_size(sizeField, sizeField);
         nuevo.setSize(mPlayerObs_size);
-        nuevo.setFillColor(sf::Color::White);
+        nuevo.setFillColor(wallColor);
         nuevo.setPosition(y, x);
 
         return nuevo;
     }
 
-    void Game::generacion_mapa(){
+    void Game::createNewMap() {
 
        srand(time(0));
        for (int i = 0; i < (fieldDimentionX - 1); i++) {
             for (int j = 0; j < (fieldDimentionY - 2); j++) {
-
-                if(this->mIsMapGenerate){
-                    Game::tabla_de_movimientos[i][j] = rand() % 2;
-                    cambiar_posicion_objetos();
-                    Game::tabla_de_comprobacion[i][j] = false;
-                    this->mapIsChecked = false;
-                }
-
-                if(Game::tabla_de_movimientos[i][j] == 0) {
-                    Game::mWindow.draw(Game::getObstaculo(i * sizeField, j * sizeField));
-                }
+                Game::arrayToMap[i][j] = rand() % 2;
+                Game::arrayToCheck[i][j] = false;
+                this->isMapChecked = false;
             }
         }
-        this->mIsMapGenerate = false;
     }
 
-    bool Game::movimiento_valido(int x, int y){
+    bool Game::checkMovement(int x, int y) {
 
-        int nextPositionY = (Game::posicion_jugable_y / sizeField) + y;
-        int nextPositionX = (Game::posicion_jugable_x / sizeField) + x;
+        int nextPositionY = (Game::playerObject.getPosition().y / sizeField) + y;
+        int nextPositionX = (Game::playerObject.getPosition().x / sizeField) + x;
 
-        bool isAValidPlay = Game::tabla_de_movimientos[nextPositionY][nextPositionX] == 1;
+        std::cout << "NEXT Positions X: " + std::to_string(nextPositionX);
+        std::cout << " | Y: " + std::to_string(nextPositionY) << std::endl;
+
+        bool isAValidPlay = !Game::arrayToMap[nextPositionY][nextPositionX];
 
         return isAValidPlay;
     }
 
-    bool Game::mapa_valido(int y_actual, int x_actual){
+    bool Game::checkMap(int y_actual, int x_actual) {
 
-        if(Game::tabla_de_comprobacion[y_actual][x_actual] == true){
-
-          this->pasos_entre_objetos --;
-          return false;
-        }
-
-        if(y_actual > (fieldDimentionX - 1) || y_actual < 0){
-
-            this->pasos_entre_objetos --;
+        // Check if this position is already previously checked.
+        if (Game::arrayToCheck[y_actual][x_actual]) {
             return false;
         }
 
-        if(x_actual > (fieldDimentionY - 2) || x_actual < 0){
-
-            this->pasos_entre_objetos --;
+        // Check vertical limit in the map.
+        if (y_actual > (fieldDimentionX - 1) || y_actual < 0) {
             return false;
         }
 
-        Game::tabla_de_comprobacion[y_actual][x_actual] = true;
-
-        if(Game::tabla_de_movimientos[y_actual][x_actual] == 0){
-
-            this->pasos_entre_objetos --;
+        // Check horizontal limit in the map.
+        if (x_actual > (fieldDimentionY - 2) || x_actual < 0) {
             return false;
         }
 
-        int positionPlayerX = Game::mPlayerObj.getPosition().x / sizeField;
-        int positionPlayerY = Game::mPlayerObj.getPosition().y / sizeField;
+        // This check if this point is playable.
+        if (!Game::arrayToMap[y_actual][x_actual]) {
+            return false;
+        }
 
-        if(positionPlayerX == x_actual && positionPlayerY == y_actual) {
+        // Set this point as checked 
+        Game::arrayToCheck[y_actual][x_actual] = true;
+        
+        // Check if this point is the point where is the objective.
+        if (objectivePositionX == x_actual && objectivePositionY == y_actual) {
+            
+            return true;//!(this->distanceBetweenObjects < 5);
+        }
 
+        this->distanceBetweenObjects ++;
+
+        if (Game::checkMap(y_actual - 1, x_actual)) {
             return true;
+        } else {
+            if (Game::checkMap(y_actual, x_actual - 1)) {
+                return true;
+            } else {
+                if (Game::checkMap(y_actual + 1, x_actual)) {
+                    return true;
+                } else {
+                    if (Game::checkMap(y_actual, x_actual + 1)) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
+            }
         }
-
-        this->pasos_entre_objetos ++;
-
-        if(Game::mapa_valido(y_actual - 1, x_actual))return true;
-        else
-        if(Game::mapa_valido(y_actual, x_actual - 1))return true;
-        else
-        if(Game::mapa_valido(y_actual + 1, x_actual))return true;
-        else
-        if(Game::mapa_valido(y_actual, x_actual + 1))return true;
-        else
-        return false;
     }
 
-    void Game::render() {
+    void Game::renderMapAndObjects() {
 
-        mWindow.clear();
+        gameWindow.clear();
 
-        Game::generacion_mapa();
-
-        while(!mapIsChecked) {
-
-            int positionPlayerX = Game::mPlayer.getPosition().x / sizeField;
-            int positionPlayerY = Game::mPlayer.getPosition().y / sizeField;
-
-            bool isMapaValido = Game::mapa_valido(positionPlayerY, positionPlayerX);
-
-            if(isMapaValido){
-
-                this->mapIsChecked = true;
-            }else{
-
-                this->pasos_entre_objetos = 0;
-                this->mIsMapGenerate = true;
-                Game::generacion_mapa();
+        for (int i = 0; i < (fieldDimentionX - 1); i++) {
+            for (int j = 0; j < (fieldDimentionY - 2); j++) {
+                if (Game::arrayToMap[i][j]) {
+                    gameWindow.draw(getWall(i * sizeField, j * sizeField, sf::Color::White));
+                }
             }
         }
 
-        mWindow.draw(mPlayer);
-        mWindow.draw(mPlayerObj);
-        mWindow.display();
+        playerObject.setPosition(playerPositionX * sizeField, playerPositionY * sizeField);
+        objetiveObject.setPosition(objectivePositionX * sizeField, objectivePositionY * sizeField);
+
+        gameWindow.draw(playerObject);
+        gameWindow.draw(objetiveObject);
+        gameWindow.display();
+    }
+
+    void Game::createNewMapAndObjects() {
+
+        bool isValidMap = false;
+        while(!isValidMap) {
+
+            distanceBetweenObjects = 0;
+            Game::createNewMap();
+            Game::setObjectPositions();
+
+            std::cout << "Player Positions X: " + std::to_string(playerPositionX);
+            std::cout << " | Y: " + std::to_string(playerPositionY) << std::endl;
+            
+            // isValidMap = Game::checkMap(playerPositionY, playerPositionX);
+
+            // if (isValidMap) {
+            //     isMapChecked = true;
+            // }
+            isValidMap = true;
+        }
     }
 
     void Game::run() {
 
-        while(mWindow.isOpen()) {
+        while(gameWindow.isOpen()) {
 
+            if (!isMapGenerated) {
+                createNewMapAndObjects();
+                renderMapAndObjects();
+                isMapGenerated = true;
+                // std::cout << "Distancia: " + std::to_string(this->distanceBetweenObjects) << std::endl;
+                // std::cout << "Player X: " + std::to_string(playerPositionX) + " - Y: " + std::to_string(playerPositionY) << std::endl;
+                // std::cout << "Objetive X: " + std::to_string(objectivePositionX) + " - Y: " + std::to_string(objectivePositionY) << std::endl;
+            }
             processEvents();
-            update();
-            render();
         }
     }
 
