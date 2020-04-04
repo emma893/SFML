@@ -23,24 +23,22 @@ class Game {
         void processEvents();
 
         // GENERAL FUNCIONS
-        void handlePlayerInput(sf::Keyboard::Key key, bool isPressed);
+        void handlePlayerInput(sf::Keyboard::Key key);
         void createNewMap();
         bool checkMovement(int x, int y);
         void setObjectPositions();
-        bool checkMap(int y_actual, int x_acutal, bool show);
-        bool checkMap2(int y_actual, int x_acutal, bool show);
+        bool checkMapByBFS(int y_actual, int x_acutal, bool show);
+        bool checkMapByDFS(int y_actual, int x_acutal, bool show);
         
-        int distanceBetweenObjects;
         sf::RectangleShape getWall(int x, int y, sf::Color wallColor);
         sf::RenderWindow gameWindow;
         sf::CircleShape playerObject;
         sf::CircleShape objetiveObject;
-        sf::CircleShape stepObject;
 
         const static int windowDimentionX = 500; // window dimention Y
         const static int windowDimentionY = 400; // window dimention X
 
-        // large: 100. medium: 50, little: 10.
+        // large: 100. medium: 50, little: 20, nano: 20
         const static int sizeBlock = 20;
         
         const static int fieldDimentionX = ((windowDimentionX / sizeBlock) * 2) + 1;
@@ -54,12 +52,11 @@ class Game {
 
         int playerPositionX;
         int playerPositionY;
-
+ 
         int objectivePositionX;
         int objectivePositionY;
 
         bool mIsMovingUp, mIsMovingRight, mIsMovingLeft, mIsMovingDown;
-        bool mIsMovingUpRel, mIsMovingRightRel, mIsMovingLeftRel, mIsMovingDownRel;
         bool isMapChecked;
         bool isMapGenerated;
 };
@@ -67,7 +64,6 @@ class Game {
     Game::Game(): gameWindow(sf::VideoMode(windowDimentionY, windowDimentionX), "Atrapame!"), playerObject() {
 
             isMapChecked = false;
-            distanceBetweenObjects = 0;
             isMapGenerated = false;
 
         // Circulo Objetivo
@@ -82,22 +78,23 @@ class Game {
             sf::Vector2f movement(0.f, 0.f);
 
         // Variables de movimiento
-            mIsMovingDown = mIsMovingLeft = mIsMovingRight = mIsMovingUp = 0;
-            mIsMovingDownRel = mIsMovingLeftRel = mIsMovingRightRel = mIsMovingUpRel = 0;
+            mIsMovingDown = mIsMovingLeft = mIsMovingRight = mIsMovingUp = false;
     }
 
-    void Game::handlePlayerInput(sf::Keyboard::Key key, bool isPressed) {
+    void Game::handlePlayerInput(sf::Keyboard::Key key) {
 
-        if (key == sf::Keyboard::Up) mIsMovingUp = isPressed;
-        else if (key == sf::Keyboard::Down) mIsMovingDown = isPressed;
-        else if (key == sf::Keyboard::Left) mIsMovingLeft = isPressed;
-        else if (key == sf::Keyboard::Right) mIsMovingRight = isPressed;
+        sf::sleep(sf::milliseconds(20));
+
+        mIsMovingUp = mIsMovingLeft = mIsMovingRight = mIsMovingDown = false;
+
+        if (key == sf::Keyboard::Up) mIsMovingUp = true;
+        else if (key == sf::Keyboard::Down) mIsMovingDown = true;
+        else if (key == sf::Keyboard::Left) mIsMovingLeft = true;
+        else if (key == sf::Keyboard::Right) mIsMovingRight = true;
 
         if (key == sf::Keyboard::J) {
             this->isMapGenerated = false;
-        }
-
-        if (isPressed) {
+        } else {
             Game::updateGame();
         }
     }
@@ -108,10 +105,7 @@ class Game {
 
         while (gameWindow.pollEvent(event)) {
             switch (event.type) {
-                case sf::Event::KeyPressed:handlePlayerInput(event.key.code, true);
-                break;
-
-                case sf::Event::KeyReleased:handlePlayerInput(event.key.code, false);
+                case sf::Event::KeyPressed:handlePlayerInput(event.key.code);
                 break;
 
                 case sf::Event::Closed:gameWindow.close();
@@ -152,7 +146,8 @@ class Game {
 
         playerObject.move(movement);
 
-        if(playerObject.getPosition() != objetiveObject.getPosition()) {
+        if(!(playerObject.getPosition().x == objetiveObject.getPosition().x) ||
+            !(playerObject.getPosition().y == objetiveObject.getPosition().y)) {
             gameWindow.draw(getWall(playerPositionYState, playerPositionXState, sf::Color::Black));
             gameWindow.draw(playerObject);
             gameWindow.display();
@@ -189,10 +184,6 @@ class Game {
         while(!validPosition) {
             x_obj = rand() % randX;
             y_obj = rand() % randY;
-
-            if(y_obj == y_player && x_obj == x_player) {
-                continue;
-            }
 
             if(!Game::arrayToMap[x_obj][y_obj]) {
                 validPosition = true;
@@ -237,7 +228,6 @@ class Game {
                 } else {
                     Game::arrayToMap[i][j] = rand() % 2;
                 }
-                // Game::arrayToMap[i][j] = rand() % 2;
             }
         }
         this->isMapChecked = false;
@@ -253,7 +243,7 @@ class Game {
         return isAValidPlay;
     }
 
-    bool Game::checkMap2(int y_actual, int x_actual, bool show) {
+    bool Game::checkMapByDFS(int y_actual, int x_actual, bool show) {
 
         // Check if this position is already previously checked.
         if (Game::arrayToCheck[y_actual][x_actual]) {
@@ -283,26 +273,24 @@ class Game {
 
         // Set this point as checked 
         Game::arrayToCheck[y_actual][x_actual] = true;
-
-        this->distanceBetweenObjects ++;
         
         // Check if this point is the point where is the objective.
         if (objectivePositionX == x_actual && objectivePositionY == y_actual) {
             // gameWindow.draw(getWall(y_actual * sizeField, x_actual * sizeField, sf::Color::Red));
             // gameWindow.display();
-            return true;//!(this->distanceBetweenObjects < 5);
+            return true;
         }
 
-        if (Game::checkMap2(y_actual - 1, x_actual, show)) {
+        if (Game::checkMapByDFS(y_actual - 1, x_actual, show)) {
             return true;
         } else {
-            if (Game::checkMap2(y_actual, x_actual - 1, show)) {
+            if (Game::checkMapByDFS(y_actual, x_actual - 1, show)) {
                 return true;
             } else {
-                if (Game::checkMap2(y_actual + 1, x_actual, show)) {
+                if (Game::checkMapByDFS(y_actual + 1, x_actual, show)) {
                     return true;
                 } else {
-                    if (Game::checkMap2(y_actual, x_actual + 1, show)) {
+                    if (Game::checkMapByDFS(y_actual, x_actual + 1, show)) {
                         return true;
                     } else {
                         return false;
@@ -312,9 +300,6 @@ class Game {
         }
     }
 
-    // int objectivePositionX;
-    // int objectivePositionY;
-
     bool checkVerticalLimit(int y_actual, int verticalLimit) {
         return y_actual >= 0 && y_actual < verticalLimit;
     }
@@ -323,7 +308,7 @@ class Game {
         return x_actual >= 0 && x_actual < horizontalLimit;
     }
 
-    bool Game::checkMap(int x_actual, int y_actual, bool show) {
+    bool Game::checkMapByBFS(int x_actual, int y_actual, bool show) {
             
         queue<pair <int, int>> nodesQueue;
         pair <int, int> currentPoint;
@@ -373,11 +358,11 @@ class Game {
                 break;
             }
 
-            if (show) {
-                gameWindow.draw(getWall(currentX * sizeField, currentY * sizeField, sf::Color::Yellow));
-                gameWindow.display();
-                sf::sleep(sf::milliseconds(20));
-            }
+            // if (show) {
+            //     gameWindow.draw(getWall(currentX * sizeField, currentY * sizeField, sf::Color::Yellow));
+            //     gameWindow.display();
+            //     sf::sleep(sf::milliseconds(20));
+            // }
 
             if (!Game::arrayToMap[currentX][currentY - 1] && !Game::arrayToCheck[currentX][currentY - 1])
                     nodesQueue.push(pair<int, int>(currentX, currentY - 1));
@@ -421,24 +406,23 @@ class Game {
         // int count = 0;
         while(!isValidMap) {
 
-            distanceBetweenObjects = 0;
             Game::createNewMap();
             Game::setObjectPositions();
             
-            // checkMap BFS, checkMap2 DFS.
-            isValidMap = Game::checkMap2(playerPositionY, playerPositionX, false);
-            for (int i = 0; i < (fieldDimentionX - 1); i++) {
-                for (int j = 0; j < (fieldDimentionY - 2); j++) {
-                    Game::arrayToCheck[i][j] = false;
-                }
-            }
+            // checkMapByBFS BFS, checkMapByDFS DFS.
+            isValidMap = Game::checkMapByDFS(playerPositionY, playerPositionX, false);
+            // for (int i = 0; i < (fieldDimentionX - 1); i++) {
+            //     for (int j = 0; j < (fieldDimentionY - 2); j++) {
+            //         Game::arrayToCheck[i][j] = false;
+            //     }
+            // }
 
             // Colorize on Yellow the steps.
 
             // if (isValidMap) {
             //     Game::renderMapAndObjects();
             //     sf::sleep(sf::milliseconds(20));
-            //     isValidMap = Game::checkMap(playerPositionY, playerPositionX, true);
+            //     isValidMap = Game::checkMapByBFS(playerPositionY, playerPositionX, true);
             //     count++;
             //     std::cout << "Cuenta: " + std::to_string(count) << std::endl;
             // }
@@ -468,4 +452,3 @@ int main() {
     Game game;
     game.run();
 }
-
