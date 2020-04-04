@@ -2,6 +2,10 @@
 #include <SFML/System.hpp>
 #include <iostream>
 #include <string>
+#include <queue>
+#include <utility> 
+
+using namespace std;
 
 class Game {
 
@@ -23,20 +27,21 @@ class Game {
         void createNewMap();
         bool checkMovement(int x, int y);
         void setObjectPositions();
-        bool checkMap(int y_actual, int x_acutal);
+        bool checkMap(int y_actual, int x_acutal, bool show);
+        bool checkMap2(int y_actual, int x_acutal, bool show);
         
         int distanceBetweenObjects;
         sf::RectangleShape getWall(int x, int y, sf::Color wallColor);
         sf::RenderWindow gameWindow;
         sf::CircleShape playerObject;
         sf::CircleShape objetiveObject;
-        sf::Vector2f movement;
+        sf::CircleShape stepObject;
 
         const static int windowDimentionX = 500; // window dimention Y
-        const static int windowDimentionY = 700; // window dimention X
+        const static int windowDimentionY = 400; // window dimention X
 
         // large: 100. medium: 50, little: 10.
-        const static int sizeBlock = 100;
+        const static int sizeBlock = 20;
         
         const static int fieldDimentionX = ((windowDimentionX / sizeBlock) * 2) + 1;
         const static int fieldDimentionY = ((windowDimentionY / sizeBlock) * 2) + 2;
@@ -120,30 +125,32 @@ class Game {
         int playerPositionXState = playerObject.getPosition().x;
         int playerPositionYState = playerObject.getPosition().y;
 
-        this->movement.y = 0.f;
-        this->movement.x = 0.f;
+        sf::Vector2f movement;
+
+        movement.y = 0.f;
+        movement.x = 0.f;
 
         if (this->mIsMovingUp && (playerPositionYState > 0) && checkMovement(0, -1)) {
-            this->movement.y -= movementDistance;
+            movement.y -= movementDistance;
             this->mIsMovingUp = false;
         } else {
             if (this->mIsMovingDown && (playerPositionYState < (windowDimentionX - sizeField)) && checkMovement(0, 1)) {
-                this->movement.y += movementDistance;
+                movement.y += movementDistance;
                 this->mIsMovingDown = false;
             } else {
                 if (this->mIsMovingLeft && (playerPositionXState  > 0) && checkMovement(-1, 0)) {
-                    this->movement.x -= movementDistance;
+                    movement.x -= movementDistance;
                     this->mIsMovingLeft= false;
                 } else {
                     if (this->mIsMovingRight && (playerPositionXState < (windowDimentionY - sizeField)) && checkMovement(1, 0)) {
-                        this->movement.x += movementDistance;
+                        movement.x += movementDistance;
                         this->mIsMovingRight = false;
                     }
                 }
             }
         }
 
-        playerObject.move(this->movement);
+        playerObject.move(movement);
 
         if(playerObject.getPosition() != objetiveObject.getPosition()) {
             gameWindow.draw(getWall(playerPositionYState, playerPositionXState, sf::Color::Black));
@@ -156,25 +163,52 @@ class Game {
 
     void Game::setObjectPositions() {
 
-        int x_player, y_player, x_obj, y_obj = 0;
+        int x_player = 0;
+        int y_player = 0;
+        int x_obj = 0; 
+        int y_obj = 0;
+        bool validPosition = false;
 
-        while(true){
+        int randX = fieldDimentionX - 1;
+        int randY = fieldDimentionY - 2;
 
-            x_player = rand() % (fieldDimentionY - 2);
-            y_player = rand() % (fieldDimentionX - 1);
+        // std::cout << "SET X: " + std::to_string(randX);
+        // std::cout << "| Y: " + std::to_string(randY) << std::endl;
 
-            x_obj = rand() % (fieldDimentionY - 2);
-            y_obj = rand() % (fieldDimentionX - 1);
+        while(!validPosition) {
+            x_player = rand() % randX;
+            y_player = rand() % randY;
 
-            if(!Game::arrayToMap[y_obj][x_obj] && !Game::arrayToMap[y_player][x_player]){
-                break;
+            if(!Game::arrayToMap[x_player][y_player]) {
+                validPosition = true;
             }
         }
 
-        this->playerPositionX = x_player;
-        this->playerPositionY = y_player;
-        this->objectivePositionX = x_obj;
-        this->objectivePositionY = y_obj;
+        validPosition = false;
+
+        while(!validPosition) {
+            x_obj = rand() % randX;
+            y_obj = rand() % randY;
+
+            if(y_obj == y_player && x_obj == x_player) {
+                continue;
+            }
+
+            if(!Game::arrayToMap[x_obj][y_obj]) {
+                validPosition = true;
+            }
+        }
+        // std::cout << "<===================>" << std::endl;
+        // std::cout << "Player X: " + std::to_string(x_player);
+        // std::cout << "| Y: " + std::to_string(y_player) << std::endl;
+
+        // std::cout << "Objective X: " + std::to_string(x_obj);
+        // std::cout << "| Y: " + std::to_string(y_obj) << std::endl;
+
+        this->playerPositionX = y_player;
+        this->playerPositionY = x_player;
+        this->objectivePositionX = y_obj;
+        this->objectivePositionY = x_obj;
     }
 
 
@@ -193,14 +227,20 @@ class Game {
 
     void Game::createNewMap() {
 
-       srand(time(0));
-       for (int i = 0; i < (fieldDimentionX - 1); i++) {
+        srand(time(0));
+        for (int i = 0; i < (fieldDimentionX - 1); i++) {
             for (int j = 0; j < (fieldDimentionY - 2); j++) {
-                Game::arrayToMap[i][j] = rand() % 2;
                 Game::arrayToCheck[i][j] = false;
-                this->isMapChecked = false;
+
+                if (i % 2 == 0 && j % 2 == 0) {
+                    Game::arrayToMap[i][j] = false;
+                } else {
+                    Game::arrayToMap[i][j] = rand() % 2;
+                }
+                // Game::arrayToMap[i][j] = rand() % 2;
             }
         }
+        this->isMapChecked = false;
     }
 
     bool Game::checkMovement(int x, int y) {
@@ -213,7 +253,7 @@ class Game {
         return isAValidPlay;
     }
 
-    bool Game::checkMap(int y_actual, int x_actual) {
+    bool Game::checkMap2(int y_actual, int x_actual, bool show) {
 
         // Check if this position is already previously checked.
         if (Game::arrayToCheck[y_actual][x_actual]) {
@@ -235,27 +275,34 @@ class Game {
             return false;
         }
 
+        // if (show) {
+        //     gameWindow.draw(getWall(y_actual * sizeField, x_actual * sizeField, sf::Color::Yellow));
+        //     gameWindow.display();
+        //     sf::sleep(sf::milliseconds(20));
+        // }
+
         // Set this point as checked 
         Game::arrayToCheck[y_actual][x_actual] = true;
+
+        this->distanceBetweenObjects ++;
         
         // Check if this point is the point where is the objective.
         if (objectivePositionX == x_actual && objectivePositionY == y_actual) {
-            
+            // gameWindow.draw(getWall(y_actual * sizeField, x_actual * sizeField, sf::Color::Red));
+            // gameWindow.display();
             return true;//!(this->distanceBetweenObjects < 5);
         }
 
-        this->distanceBetweenObjects ++;
-
-        if (Game::checkMap(y_actual - 1, x_actual)) {
+        if (Game::checkMap2(y_actual - 1, x_actual, show)) {
             return true;
         } else {
-            if (Game::checkMap(y_actual, x_actual - 1)) {
+            if (Game::checkMap2(y_actual, x_actual - 1, show)) {
                 return true;
             } else {
-                if (Game::checkMap(y_actual + 1, x_actual)) {
+                if (Game::checkMap2(y_actual + 1, x_actual, show)) {
                     return true;
                 } else {
-                    if (Game::checkMap(y_actual, x_actual + 1)) {
+                    if (Game::checkMap2(y_actual, x_actual + 1, show)) {
                         return true;
                     } else {
                         return false;
@@ -263,6 +310,89 @@ class Game {
                 }
             }
         }
+    }
+
+    // int objectivePositionX;
+    // int objectivePositionY;
+
+    bool checkVerticalLimit(int y_actual, int verticalLimit) {
+        return y_actual >= 0 && y_actual < verticalLimit;
+    }
+
+    bool checkHorizontalLimit(int x_actual, int horizontalLimit) {
+        return x_actual >= 0 && x_actual < horizontalLimit;
+    }
+
+    bool Game::checkMap(int x_actual, int y_actual, bool show) {
+            
+        queue<pair <int, int>> nodesQueue;
+        pair <int, int> currentPoint;
+        int currentX;
+        int currentY;
+        bool validMap = false;
+
+        if (!Game::arrayToMap[x_actual][y_actual - 1]) nodesQueue.push(pair<int, int>(x_actual, y_actual - 1));
+        if (!Game::arrayToMap[x_actual - 1][y_actual]) nodesQueue.push(pair<int, int>(x_actual - 1, y_actual));
+        if (!Game::arrayToMap[x_actual][y_actual + 1]) nodesQueue.push(pair<int, int>(x_actual, y_actual + 1));
+        if (!Game::arrayToMap[x_actual + 1][y_actual]) nodesQueue.push(pair<int, int>(x_actual + 1, y_actual));
+
+        while (!nodesQueue.empty()) {
+            currentPoint = nodesQueue.front();
+
+            currentX = currentPoint.first;
+            currentY = currentPoint.second;
+            // std::cout << "<===================> " + to_string(nodesQueue.size()) << std::endl;
+            // std::cout << "CURRENT X: " + std::to_string(currentX);
+            // std::cout << "| Y: " + std::to_string(currentY) << std::endl;
+
+            nodesQueue.pop();
+
+            // This check if this point is playable. (true means false, because there's a wall)
+            if (Game::arrayToMap[currentX][currentY] || Game::arrayToCheck[currentX][currentY]) {
+                continue;
+            }
+
+            Game::arrayToCheck[currentX][currentY] = true;
+
+            // Check horizontal limit in the map.
+            if (!checkVerticalLimit(currentY, (fieldDimentionY - 2))) {
+                continue;
+            }
+
+            // Check vertical limit in the map.
+            if (!checkHorizontalLimit(currentX, (fieldDimentionX - 1))) {
+                continue;
+            }
+
+            // Check if current point is same at objetive.
+            if (objectivePositionX == currentY && objectivePositionY == currentX) {
+                // gameWindow.draw(getWall(currentX * sizeField, currentY * sizeField, sf::Color::Red));
+                // gameWindow.display();
+                // sf::sleep(sf::milliseconds(500));
+                validMap = true;
+                break;
+            }
+
+            if (show) {
+                gameWindow.draw(getWall(currentX * sizeField, currentY * sizeField, sf::Color::Yellow));
+                gameWindow.display();
+                sf::sleep(sf::milliseconds(20));
+            }
+
+            if (!Game::arrayToMap[currentX][currentY - 1] && !Game::arrayToCheck[currentX][currentY - 1])
+                    nodesQueue.push(pair<int, int>(currentX, currentY - 1));
+
+            if (!Game::arrayToMap[currentX - 1][currentY] && !Game::arrayToCheck[currentX - 1][currentY])
+                    nodesQueue.push(pair<int, int>(currentX - 1, currentY));
+
+            if (!Game::arrayToMap[currentX][currentY + 1] && !Game::arrayToCheck[currentX][currentY + 1])
+                    nodesQueue.push(pair<int, int>(currentX, currentY + 1));
+
+            if (!Game::arrayToMap[currentX + 1][currentY] && !Game::arrayToCheck[currentX + 1][currentY])
+                    nodesQueue.push(pair<int, int>(currentX + 1, currentY));
+
+        }
+        return validMap;
     }
 
     void Game::renderMapAndObjects() {
@@ -288,17 +418,35 @@ class Game {
     void Game::createNewMapAndObjects() {
 
         bool isValidMap = false;
+        // int count = 0;
         while(!isValidMap) {
 
             distanceBetweenObjects = 0;
             Game::createNewMap();
             Game::setObjectPositions();
             
-            isValidMap = Game::checkMap(playerPositionY, playerPositionX);
+            // checkMap BFS, checkMap2 DFS.
+            isValidMap = Game::checkMap2(playerPositionY, playerPositionX, false);
+            for (int i = 0; i < (fieldDimentionX - 1); i++) {
+                for (int j = 0; j < (fieldDimentionY - 2); j++) {
+                    Game::arrayToCheck[i][j] = false;
+                }
+            }
+
+            // Colorize on Yellow the steps.
+
+            // if (isValidMap) {
+            //     Game::renderMapAndObjects();
+            //     sf::sleep(sf::milliseconds(20));
+            //     isValidMap = Game::checkMap(playerPositionY, playerPositionX, true);
+            //     count++;
+            //     std::cout << "Cuenta: " + std::to_string(count) << std::endl;
+            // }
 
             if (isValidMap) {
                 isMapChecked = true;
             }
+            // isValidMap = isMapChecked = false;
         }
     }
 
